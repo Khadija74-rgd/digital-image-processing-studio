@@ -1,0 +1,368 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixelLab | Image Processing Studio</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="app-layout">
+
+    <aside class="sidebar">
+        <a class="brand" href="/">
+            <span class="brand-icon">P</span>
+            <span>PixelLab<small>IMAGE PROCESSING</small></span>
+        </a>
+
+        <p class="nav-label">WORKSPACE</p>
+        <a class="nav-item active" href="#workspace">▦ &nbsp; Dashboard</a>
+        <a class="nav-item" href="#image-info">▤ &nbsp; Image Analysis</a>
+        <a class="nav-item" href="#processing-tools">✳ &nbsp; Processing Tools</a>
+        <a class="nav-item" href="#color-analysis">◉ &nbsp; Color Analysis</a>
+
+        <div class="sidebar-bottom">
+            <div class="status-dot"></div>
+            <div><strong>Local Processing</strong><small>Your images stay on this computer.</small></div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <p class="eyebrow">DIGITAL IMAGE PROCESSING</p>
+                <h1>Image Studio</h1>
+            </div>
+            <span class="system-badge"><span></span> Studio ready</span>
+        </header>
+
+        <section class="welcome">
+            <div>
+                <span class="welcome-tag">CREATIVE WORKSPACE</span>
+                <h2>Transform your images.</h2>
+                <p>Upload, inspect, analyze and process images in one place.</p>
+            </div>
+            <div class="welcome-art" aria-hidden="true">✳</div>
+        </section>
+
+        {% if error %}
+        <div class="alert">{{ error }}</div>
+        {% endif %}
+
+        <section class="panel upload-panel" id="workspace">
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow">GET STARTED</span>
+                    <h2>Upload an image</h2>
+                    <p>Choose an image to begin your analysis.</p>
+                </div>
+                <span class="step-number">01</span>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data" class="upload-form">
+                <label class="drop-zone" for="imageInput">
+                    <span class="upload-icon">↑</span>
+                    <strong id="fileLabel">Drop your image here or browse</strong>
+                    <span>PNG, JPG, JPEG, BMP, WEBP or TIFF · Maximum 10 MB</span>
+                    <input id="imageInput" type="file" name="image"
+                           accept=".png,.jpg,.jpeg,.bmp,.webp,.tif,.tiff" required>
+                </label>
+                <button class="button primary upload-button" type="submit">
+                    Upload &amp; Analyze <span>→</span>
+                </button>
+            </form>
+        </section>
+
+        {% if original %}
+        <section class="section-block" id="image-info">
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow">IMAGE OVERVIEW</span>
+                    <h2>Image information</h2>
+                    <p>Technical details of your uploaded image.</p>
+                </div>
+                <span class="step-number">02</span>
+            </div>
+
+            <div class="stats-grid">
+                <article class="stat-card"><span>File format</span><strong>{{ info.format }}</strong><small>Detected format</small></article>
+                <article class="stat-card"><span>Dimensions</span><strong>{{ info.width }} × {{ info.height }}</strong><small>Width × height in pixels</small></article>
+                <article class="stat-card"><span>Total pixels</span><strong>{{ "{:,}".format(info.total_pixels) }}</strong><small>Image pixel count</small></article>
+                <article class="stat-card"><span>Color mode</span><strong>{{ info.mode }}</strong><small>Original image mode</small></article>
+                <article class="stat-card"><span>File size</span><strong>{{ info.file_size }}</strong><small>Uploaded file size</small></article>
+                <article class="stat-card"><span>Avg. brightness</span><strong>{{ info.brightness }} <small class="unit">/ 255</small></strong><small>Grayscale intensity average</small></article>
+            </div>
+        </section>
+
+        <section class="section-block" id="processing-tools">
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow">IMAGE PREVIEW</span>
+                    <h2>Compare your images</h2>
+                    <p>Select a pixel on the original image to inspect its color.</p>
+                </div>
+                <span class="step-number">03</span>
+            </div>
+
+            <div class="preview-grid">
+                <article class="panel image-panel">
+                    <div class="image-panel-heading">
+                        <div><span class="preview-dot blue"></span><strong>Original image</strong></div>
+                        <span class="mini-tag">SOURCE</span>
+                    </div>
+                    <div class="image-stage">
+                        <img id="sourceImage"
+                             src="{{ url_for('uploaded_file', filename=original) }}"
+                             alt="Original uploaded image">
+                    </div>
+                    <p class="image-caption">Click the image to inspect RGB and HEX values.</p>
+                    <div id="pixelResult" class="pixel-result">
+                        Pixel details will appear here.
+                    </div>
+                </article>
+
+                <article class="panel image-panel">
+                    <div class="image-panel-heading">
+                        <div><span class="preview-dot purple"></span><strong>Grayscale image</strong></div>
+                        <span class="mini-tag">PROCESSED</span>
+                    </div>
+                    <div class="image-stage">
+                        <img src="{{ url_for('processed_file', filename=grayscale) }}"
+                             alt="Grayscale processed image">
+                    </div>
+                    <p class="image-caption">Converted to shades of gray.</p>
+                    <a class="button secondary download-link"
+                       href="{{ url_for('processed_file', filename=grayscale) }}"
+                       download="grayscale.png">↓ Download grayscale</a>
+                </article>
+            </div>
+        </section>
+
+        <section class="section-block" id="brightness-tool">
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow">LIVE ADJUSTMENT</span>
+                    <h2>Brightness control</h2>
+                    <p>Adjust image brightness and preview the result.</p>
+                </div>
+                <span class="step-number">04</span>
+            </div>
+
+            <article class="panel tool-panel">
+                <div class="slider-header">
+                    <label for="brightness">Brightness level</label>
+                    <strong id="brightnessValue">100%</strong>
+                </div>
+                <div class="slider-row">
+                    <span>Dark</span>
+                    <input id="brightness" type="range" min="0" max="200" value="100">
+                    <span>Bright</span>
+                </div>
+                <div class="image-stage brightness-stage">
+                    <img id="brightImage"
+                         src="{{ url_for('effect_file', filename=brightness_file) }}"
+                         alt="Brightness preview">
+                </div>
+                <div class="tool-actions">
+                    <p class="image-caption">100% is the original brightness.</p>
+                    <button class="button secondary" id="resetBrightness" type="button">Reset to 100%</button>
+                    <a class="button secondary download-link"
+                       href="{{ url_for('brightness_preview', filename=original) }}?value=100"
+                       id="downloadBrightness" download="brightness.png">↓ Download current</a>
+                </div>
+            </article>
+        </section>
+
+        <section class="section-block">
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow">EDGE ANALYSIS</span>
+                    <h2>Edge detection</h2>
+                    <p>Highlight outlines and intensity transitions in the image.</p>
+                </div>
+                <span class="step-number">05</span>
+            </div>
+            <article class="panel image-panel edge-panel">
+                <div class="image-panel-heading">
+                    <div><span class="preview-dot green"></span><strong>Detected edges</strong></div>
+                    <span class="mini-tag">FIND_EDGES</span>
+                </div>
+                <div class="image-stage">
+                    <img class="effect-image"
+                         src="{{ url_for('effect_file', filename=edge_file) }}"
+                         alt="Edge detection result">
+                </div>
+                <a class="button secondary download-link"
+                   href="{{ url_for('effect_file', filename=edge_file) }}"
+                   download="edges.png">↓ Download edge image</a>
+            </article>
+        </section>
+
+        <section class="section-block" id="color-analysis">
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow">COLOR INTELLIGENCE</span>
+                    <h2>Dominant colors</h2>
+                    <p>Explore the main colors detected in your image.</p>
+                </div>
+                <span class="step-number">06</span>
+            </div>
+            <div class="palette-grid">
+                {% for color in colors %}
+                <article class="color-card">
+                    <div class="color-swatch" style="background:{{ color.hex }}"></div>
+                    <div class="color-details">
+                        <strong>{{ color.hex }}</strong>
+                        <span>RGB {{ color.rgb }}</span>
+                        <button type="button" class="copy-color"
+                                data-color="{{ color.hex }}">Copy HEX</button>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+
+        <div class="new-image-row">
+            <p>Want to analyze another image?</p>
+            <a class="button primary" href="/">Start a new analysis →</a>
+        </div>
+        {% endif %}
+
+        <footer>
+            <strong>PixelLab</strong> · Digital Image Processing Studio
+            <span>Local demo · Images are processed on your computer.</span>
+        </footer>
+    </main>
+</div>
+
+<script>
+const fileInput = document.getElementById("imageInput");
+const fileLabel = document.getElementById("fileLabel");
+
+if (fileInput) {
+    fileInput.addEventListener("change", () => {
+        fileLabel.textContent = fileInput.files.length
+            ? fileInput.files[0].name
+            : "Drop your image here or browse";
+    });
+
+    const dropZone = document.querySelector(".drop-zone");
+    ["dragenter", "dragover"].forEach(name => {
+        dropZone.addEventListener(name, event => {
+            event.preventDefault();
+            dropZone.classList.add("drag-active");
+        });
+    });
+    ["dragleave", "drop"].forEach(name => {
+        dropZone.addEventListener(name, event => {
+            event.preventDefault();
+            dropZone.classList.remove("drag-active");
+        });
+    });
+    dropZone.addEventListener("drop", event => {
+        if (event.dataTransfer.files.length) {
+            fileInput.files = event.dataTransfer.files;
+            fileLabel.textContent = fileInput.files[0].name;
+        }
+    });
+}
+
+const img = document.getElementById("sourceImage");
+const pixelResult = document.getElementById("pixelResult");
+
+if (img && pixelResult) {
+    img.addEventListener("click", async event => {
+        const rect = img.getBoundingClientRect();
+        const scale = Math.min(rect.width / img.naturalWidth, rect.height / img.naturalHeight);
+        const displayedWidth = img.naturalWidth * scale;
+        const displayedHeight = img.naturalHeight * scale;
+        const offsetX = (rect.width - displayedWidth) / 2;
+        const offsetY = (rect.height - displayedHeight) / 2;
+        const localX = event.clientX - rect.left - offsetX;
+        const localY = event.clientY - rect.top - offsetY;
+
+        if (localX < 0 || localY < 0 ||
+            localX >= displayedWidth || localY >= displayedHeight) return;
+
+        const x = Math.floor(localX / scale);
+        const y = Math.floor(localY / scale);
+        pixelResult.textContent = "Reading pixel...";
+
+        try {
+            const response = await fetch(
+                `/pixel/{{ original }}?x=${x}&y=${y}`
+            );
+            const data = await response.json();
+            if (!response.ok) throw new Error();
+
+            pixelResult.replaceChildren();
+            const title = document.createElement("strong");
+            title.textContent = `Pixel (${data.x}, ${data.y})`;
+            const details = document.createElement("span");
+            details.textContent = `RGB (${data.r}, ${data.g}, ${data.b}) · ${data.hex}`;
+            const swatch = document.createElement("span");
+            swatch.className = "pixel-swatch";
+            swatch.style.backgroundColor = data.hex;
+            pixelResult.append(title, details, swatch);
+        } catch {
+            pixelResult.textContent = "Could not read pixel. Please try again.";
+        }
+    });
+}
+
+const slider = document.getElementById("brightness");
+const brightImage = document.getElementById("brightImage");
+const brightnessValue = document.getElementById("brightnessValue");
+const downloadBrightness = document.getElementById("downloadBrightness");
+let debounceTimer;
+
+async function updateBrightness() {
+    if (!slider || !brightImage) return;
+    const value = Number(slider.value);
+    brightnessValue.textContent = `${value}%`;
+    brightImage.style.opacity = "0.65";
+
+    try {
+        const response = await fetch(`/brightness/{{ original }}?value=${value}`);
+        if (!response.ok) throw new Error();
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const old = brightImage.dataset.objectUrl;
+        if (old) URL.revokeObjectURL(old);
+        brightImage.src = objectUrl;
+        brightImage.dataset.objectUrl = objectUrl;
+        downloadBrightness.href = `/brightness/{{ original }}?value=${value}`;
+    } catch {
+        brightnessValue.textContent = "Could not update";
+    } finally {
+        brightImage.style.opacity = "1";
+    }
+}
+
+if (slider) {
+    slider.addEventListener("input", () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(updateBrightness, 150);
+    });
+
+    document.getElementById("resetBrightness").addEventListener("click", () => {
+        slider.value = 100;
+        updateBrightness();
+    });
+}
+
+document.querySelectorAll(".copy-color").forEach(button => {
+    button.addEventListener("click", async () => {
+        try {
+            await navigator.clipboard.writeText(button.dataset.color);
+            button.textContent = "Copied!";
+            setTimeout(() => button.textContent = "Copy HEX", 1200);
+        } catch {
+            button.textContent = button.dataset.color;
+        }
+    });
+});
+</script>
+</body>
+</html>
